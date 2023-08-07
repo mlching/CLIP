@@ -14,7 +14,6 @@ import json
 from typing import List, Tuple, Optional
 import argparse
 
-
 class ConceptualDS(Dataset):
 
     @staticmethod
@@ -26,14 +25,6 @@ class ConceptualDS(Dataset):
                 with open(out_data_path, 'rb') as f:
                     raw_data = pickle.load(f)["info"]
                 data.append(raw_data)
-        for i in range(16):
-            for j in range(3):
-                out_data_path = f"{data_root}/conceptual_{suffix}_{i:02d}_{j:02d}.pkl"
-                if os.path.isfile(out_data_path):
-                    with open(out_data_path, 'rb') as f:
-                        raw_data = pickle.load(f)["info"]
-                    data.append(raw_data)
- 
 
         return data
 
@@ -71,7 +62,7 @@ class ConceptualDS(Dataset):
         self.data_root = data_root
         self.data = self.collect(data_root, suffix)
         self.preprocess = preprocess
-        self.dummy = torch.zeros(3, 224, 224)
+        self.dummy = torch.zeros(3, 288, 288)
 
 
 def save_pickle(data, out_path: str, recover_index: Optional[int] = None):
@@ -129,7 +120,6 @@ def thread(urls: List[Tuple[List[str], int]], thread_id: int, progress: tqdm, lo
     save_pickle({'parsed': parsed, 'info': info}, out_data_path, 2)
     return 0
 
-
 def download_conceptual(conceptual_root: str, num_threads: int):
     urls = []
     for suffix in ("val", "train"):
@@ -137,7 +127,7 @@ def download_conceptual(conceptual_root: str, num_threads: int):
             tsv_path = f"{conceptual_root}/Train_GCC-training.tsv"
         else:
             tsv_path = f"{conceptual_root}/Validation_GCC-1.1.0-Validation.tsv"
-        with open(tsv_path, encoding='utf-8') as f:
+        with open(tsv_path) as f:
             read_tsv = csv.reader(f, delimiter="\t")
             for i, row in enumerate(read_tsv):
                 urls.append((row, i))
@@ -177,13 +167,11 @@ def create_clip_embeddings(conceptual_root: str, clip_model_type: str):
     all_captions = []
     for suffix in ("val", "train"):
         device = torch.device("cuda:0")
-        clip_model, preprocess = clip.load(clip_model_type, device=device, jit=False)
+        clip_model, preprocess = clip.load(clip_model_type, device=device)
         clip_model = clip_model.eval()
         ds = ConceptualDS(conceptual_root, preprocess, suffix)
         dl = DataLoader(ds, batch_size=200, shuffle=False, num_workers=8, drop_last=False)
         progress = tqdm(total=len(dl))
-        print("ds length",len(ds))
-        print("dl length", len(dl))
         counter = 0
         clip_model_name = clip_model_type.replace('/', '_')
         out_data_path = f"{conceptual_root}/conceptual_clip_{clip_model_name}_{suffix}.pkl"
@@ -218,7 +206,7 @@ def main():
     parser.add_argument('--clip_model_type', default="ViT-B/32", choices=('RN50', 'RN101', 'RN50x4', 'ViT-B/32'))
     parser.add_argument('--num_threads', type=int, default=16)
     args = parser.parse_args()
-    download_conceptual(args.data_root, args.num_threads)
+    #download_conceptual(args.data_root, args.num_threads)
     create_clip_embeddings(args.data_root, args.clip_model_type)
 
 
