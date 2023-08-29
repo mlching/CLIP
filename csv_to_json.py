@@ -1,3 +1,4 @@
+#convert custom data in a csv file to a txt file
 import csv
 import json
 data = []
