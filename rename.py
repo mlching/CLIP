@@ -1,3 +1,4 @@
+#rename all images in a folder
 import os
 
 folder_path = "./data_collected/custom2 - Copy"  # Set the path to the folder containing the images
